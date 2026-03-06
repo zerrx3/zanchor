@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  min-height: 100vh;
+}
+
+.responsive-container {
+  width: 100%;
+  max-width: 100vw;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .responsive-container {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-container {
+    padding: 2rem;
+  }
+}
+
+/* Animated waves overlay */
+@keyframes wave-motion {
+  0%, 100% {
+    transform: translateX(0) translateZ(0) scaleY(1);
+  }
+  50% {
+    transform: translateX(-25%) translateZ(0) scaleY(1.05);
+  }
+}
+
+@keyframes wave-motion-slow {
+  0%, 100% {
+    transform: translateX(0) translateZ(0) scaleY(1);
+  }
+  50% {
+    transform: translateX(15%) translateZ(0) scaleY(1.03);
+  }
+}
+
+.animate-wave {
+  animation: wave-motion 6s ease-in-out infinite;
+}
+
+.animate-wave-slow {
+  animation: wave-motion-slow 8s ease-in-out infinite;
+}
