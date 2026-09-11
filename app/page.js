@@ -55,20 +55,6 @@ export default function HomePage() {
           <p className="mt-6 text-lg text-gray-200 max-w-2xl mx-auto drop-shadow-md">
             Building things on the web. This is my portfolio — a simple home for projects and links.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="#projects"
-              className="px-6 py-3 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors shadow-lg"
-            >
-              View work
-            </Link>
-            <a
-              href="mailto:hello@example.com"
-              className="px-6 py-3 border-2 border-white/80 text-white text-sm font-medium rounded-lg hover:bg-white/10 transition-colors"
-            >
-              Get in touch
-            </a>
-          </div>
         </div>
       </section>
 
@@ -78,20 +64,20 @@ export default function HomePage() {
         <section id="projects" className="py-16">
           <h2 className="text-2xl font-semibold text-white mb-6">Projects</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-colors">
-              <h3 className="text-lg font-medium text-white">Project one</h3>
+            <Link href="/stock-analyzer" className="block bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-colors">
+              <h3 className="text-lg font-medium text-white">Stock Analyzer</h3>
               <p className="mt-2 text-sm text-gray-400">
-                Short description. Add your projects here.
+                Score stocks on valuation, growth, financial health, and momentum.
               </p>
-              <span className="inline-block mt-3 text-sm text-purple-400">Coming soon</span>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-colors">
-              <h3 className="text-lg font-medium text-white">Project two</h3>
+              <span className="inline-block mt-3 text-sm text-purple-400">Open tool →</span>
+            </Link>
+            <Link href="/portfolio-analyzer" className="block bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-colors">
+              <h3 className="text-lg font-medium text-white">Portfolio Analyzer</h3>
               <p className="mt-2 text-sm text-gray-400">
-                Another project placeholder.
+                Track your holdings and see value, allocation, and gain/loss at a glance.
               </p>
-              <span className="inline-block mt-3 text-sm text-purple-400">Coming soon</span>
-            </div>
+              <span className="inline-block mt-3 text-sm text-purple-400">Open tool →</span>
+            </Link>
           </div>
         </section>
 
