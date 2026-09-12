@@ -72,3 +72,102 @@ body {
 .animate-chip-pop {
   animation: chip-pop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* Hero grid backdrop, slowly panning like a chart grid */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.09) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+@keyframes grid-pan {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 44px 44px;
+  }
+}
+
+.animate-grid-pan {
+  animation: grid-pan 7s linear infinite;
+}
+
+/* Scrolling ticker tape */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 36s linear infinite;
+}
+
+@keyframes marquee-reverse {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-marquee-reverse {
+  animation: marquee-reverse 36s linear infinite;
+}
+
+.ticker-tape:hover .animate-marquee,
+.ticker-tape:hover .animate-marquee-reverse {
+  animation-play-state: paused;
+}
+
+/* Soft breathing glow for background orbs */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.08);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 5s ease-in-out infinite;
+}
+
+/* One-shot "drawing" animation for the hero chart line */
+@keyframes draw-line {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw-line {
+  stroke-dasharray: 100;
+  animation: draw-line 2.4s ease-out forwards;
+}
+
+@keyframes blink-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.3);
+  }
+}
+
+.animate-blink-dot {
+  animation: blink-dot 1.8s ease-in-out infinite;
+}

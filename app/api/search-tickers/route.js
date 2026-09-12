@@ -9,7 +9,10 @@ const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const q = (searchParams.get('q') || '').trim();
-  const region = searchParams.get('region') === 'SG' ? 'SG' : 'US';
+  const regionParam = searchParams.get('region');
+  // No region param (or explicitly 'ALL') searches every market; 'US'/'SG'
+  // scopes results the way the region-toggle UIs (e.g. Stock Analyzer) expect.
+  const region = regionParam === 'SG' ? 'SG' : regionParam === 'US' ? 'US' : 'ALL';
 
   if (!q) {
     return NextResponse.json({ results: [] });
@@ -21,7 +24,9 @@ export async function GET(request) {
     const results = (quotes || [])
       .filter((quote) => {
         if (quote.quoteType !== 'EQUITY' || !quote.symbol) return false;
-        return region === 'SG' ? quote.exchange === 'SES' : !quote.symbol.includes('.');
+        if (region === 'SG') return quote.exchange === 'SES';
+        if (region === 'US') return !quote.symbol.includes('.');
+        return true;
       })
       .map((quote) => ({
         symbol: quote.symbol,

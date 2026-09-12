@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import Link from 'next/link';
+import SiteNav from '@/components/SiteNav';
 import {
   ResponsiveContainer,
   RadialBarChart,
@@ -20,6 +20,7 @@ import { currencyPrefix } from '@/lib/currency';
 const SECTOR_STYLES = {
   MAG7: 'bg-fuchsia-500/15 text-fuchsia-300',
   Software: 'bg-blue-500/15 text-blue-300',
+  Cybersecurity: 'bg-sky-500/15 text-sky-300',
   Consumer: 'bg-pink-500/15 text-pink-300',
   Auto: 'bg-orange-500/15 text-orange-300',
   Finance: 'bg-emerald-500/15 text-emerald-300',
@@ -36,6 +37,7 @@ const SECTOR_STYLES = {
 const SECTOR_TAB_ACTIVE_STYLES = {
   MAG7: 'bg-fuchsia-500/20 text-fuchsia-200 border-fuchsia-500/50',
   Software: 'bg-blue-500/20 text-blue-200 border-blue-500/50',
+  Cybersecurity: 'bg-sky-500/20 text-sky-200 border-sky-500/50',
   Consumer: 'bg-pink-500/20 text-pink-200 border-pink-500/50',
   Auto: 'bg-orange-500/20 text-orange-200 border-orange-500/50',
   Finance: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50',
@@ -52,6 +54,7 @@ const SECTOR_TAB_ACTIVE_STYLES = {
 const SECTOR_EMOJI = {
   MAG7: '7️⃣',
   Software: '💾',
+  Cybersecurity: '🔒',
   Consumer: '🛒',
   Auto: '🚗',
   Finance: '🏦',
@@ -316,7 +319,135 @@ function MetricsList({ metrics }) {
   );
 }
 
-function ResultCard({ result }) {
+const RANK_MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+function RankBadge({ rank }) {
+  if (rank == null) return null;
+  return (
+    <span className="inline-flex items-center justify-center shrink-0 w-7 h-7 rounded-full bg-gray-900 border border-gray-700 text-xs font-bold text-gray-300">
+      {RANK_MEDAL[rank] || `#${rank}`}
+    </span>
+  );
+}
+
+function reasonsFor(result) {
+  const metrics = result.metrics || [];
+  const pros = metrics.filter((m) => m.points > 0).sort((a, b) => b.points - a.points);
+  const cons = metrics.filter((m) => m.points < 0).sort((a, b) => a.points - b.points);
+  return { pros, cons };
+}
+
+function ReasonList({ title, items, tone }) {
+  if (items.length === 0) return null;
+  const toneClass = tone === 'positive' ? 'text-emerald-400' : 'text-red-400';
+  return (
+    <div>
+      <h5 className={`text-xs font-semibold uppercase tracking-wide mb-1.5 ${toneClass}`}>{title}</h5>
+      <ul className="space-y-1">
+        {items.map((m) => (
+          <li key={m.label} className="text-xs text-gray-300 flex items-start gap-1.5">
+            <span className={toneClass}>{tone === 'positive' ? '+' : '−'}</span>
+            <span>
+              <span className="text-gray-400">{m.label}:</span> {m.valueDisplay}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function RankingRow({ rank, result, expanded, onToggle }) {
+  const { pros, cons } = useMemo(() => reasonsFor(result), [result]);
+
+  return (
+    <div className="rounded-lg bg-gray-900/60 overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-900 transition-colors"
+      >
+        <RankBadge rank={rank} />
+        <Avatar symbol={result.ticker} size="sm" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-white text-sm">{result.ticker}</span>
+            <span className="text-xs text-gray-500 truncate">{result.name}</span>
+          </div>
+        </div>
+        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border whitespace-nowrap ${verdictStyle(result.verdict)}`}>
+          {result.verdict}
+        </span>
+        <span className="text-sm font-mono text-gray-300 w-14 text-right">
+          {result.compositeScorePct.toFixed(0)}/100
+        </span>
+        <span className={`text-gray-500 text-xs transition-transform ${expanded ? 'rotate-180' : ''}`}>▼</span>
+      </button>
+
+      {expanded && (
+        <div className="px-3 pb-3 pt-1 border-t border-gray-800">
+          {result.recommendationText && (
+            <p className="text-xs text-gray-300 leading-relaxed my-2.5">{result.recommendationText}</p>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <ReasonList title="Worth buying because" items={pros} tone="positive" />
+            <ReasonList title="Watch out for" items={cons} tone="negative" />
+          </div>
+          {pros.length === 0 && cons.length === 0 && (
+            <p className="text-xs text-gray-500">No standout factors either way — data was mostly neutral.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RankingSummary({ results }) {
+  const [expandedTicker, setExpandedTicker] = useState(null);
+
+  const ranked = useMemo(() => {
+    return results
+      .map((r, i) => ({ ...r, _origIndex: i }))
+      .filter((r) => !r.error && r.compositeScorePct != null)
+      .sort((a, b) => b.compositeScorePct - a.compositeScorePct);
+  }, [results]);
+
+  const errored = results.filter((r) => r.error);
+
+  if (ranked.length === 0) return null;
+
+  return (
+    <div className="bg-gray-800 rounded-xl p-5 border border-gray-700/50">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">
+        Ranking — most to least worth buying
+      </h2>
+      <div className="space-y-1.5">
+        {ranked.map((r, i) => {
+          const rank = i + 1;
+          return (
+            <RankingRow
+              key={r.ticker}
+              rank={rank}
+              result={r}
+              expanded={expandedTicker === r.ticker}
+              onToggle={() => setExpandedTicker((prev) => (prev === r.ticker ? null : r.ticker))}
+            />
+          );
+        })}
+        {errored.map((r) => (
+          <div key={r.ticker} className="flex items-center gap-3 rounded-lg bg-gray-900/60 px-3 py-2 opacity-60">
+            <span className="inline-flex items-center justify-center shrink-0 w-7 h-7 rounded-full bg-gray-900 border border-red-900/40 text-xs text-red-400">
+              !
+            </span>
+            <span className="font-semibold text-gray-400 text-sm">{r.ticker}</span>
+            <span className="text-xs text-red-400 truncate">{r.error}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ResultCard({ result, rank }) {
   const [expanded, setExpanded] = useState(false);
 
   if (result.error) {
@@ -333,6 +464,7 @@ function ResultCard({ result }) {
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
+            <RankBadge rank={rank} />
             <Avatar symbol={result.ticker} size="sm" />
             <h3 className="text-lg font-semibold text-white">{result.ticker}</h3>
           </div>
@@ -489,6 +621,32 @@ export default function StockAnalyzerPage() {
 
   const tickers = tickersByRegion[activeRegion] || [];
 
+  const rankByTicker = useMemo(() => {
+    if (!results) return {};
+    const ranked = results
+      .filter((r) => !r.error && r.compositeScorePct != null)
+      .sort((a, b) => b.compositeScorePct - a.compositeScorePct);
+    const map = {};
+    ranked.forEach((r, i) => {
+      map[r.ticker] = i + 1;
+    });
+    return map;
+  }, [results]);
+
+  // Cards follow the same best-to-worst order as the ranking summary above
+  // them; errored tickers (no rank) sink to the end.
+  const sortedResults = useMemo(() => {
+    if (!results) return null;
+    return [...results].sort((a, b) => {
+      const rankA = rankByTicker[a.ticker];
+      const rankB = rankByTicker[b.ticker];
+      if (rankA == null && rankB == null) return 0;
+      if (rankA == null) return 1;
+      if (rankB == null) return -1;
+      return rankA - rankB;
+    });
+  }, [results, rankByTicker]);
+
   function setTickers(updater) {
     setTickersByRegion((prev) => {
       const current = prev[activeRegion] || [];
@@ -558,7 +716,7 @@ export default function StockAnalyzerPage() {
   function addTicker(raw) {
     const t = raw.trim().toUpperCase();
     if (!t || tickers.includes(t)) return;
-    if (tickers.length >= 10) return;
+    if (tickers.length >= 15) return;
     setTickers((prev) => [...prev, t]);
     setInput('');
   }
@@ -661,14 +819,11 @@ export default function StockAnalyzerPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      <SiteNav />
       <div className="max-w-6xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
-        <Link href="/" className="text-sm text-purple-400 hover:text-purple-300 transition-colors">
-          ← Back home
-        </Link>
-
         <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl text-center">Stock Analyzer</h1>
         <p className="mt-2 text-sm text-gray-400 whitespace-nowrap text-center">
-          Select up to 10 tickers to score on valuation, growth, financial health, and technical momentum. This is a
+          Select up to 15 tickers to score on valuation, growth, financial health, and technical momentum. This is a
           rules-based research aid, not investment advice.
         </p>
 
@@ -819,9 +974,9 @@ export default function StockAnalyzerPage() {
             <button
               onClick={runAnalysis}
               disabled={loading || tickers.length === 0}
-              className="shrink-0 px-5 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors shadow-lg"
+              className="shrink-0 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors shadow-lg"
             >
-              {loading ? 'Analyzing…' : `Run Analysis (${tickers.length})`}
+              {loading ? 'Analyzing…' : 'Run Analysis'}
             </button>
           </div>
 
@@ -834,6 +989,10 @@ export default function StockAnalyzerPage() {
             />
             Force refresh (skip 24h cache)
           </label>
+
+          <p className="mt-3 text-[11px] text-gray-600">
+            Your ticker selections and analysis results are saved to your browser&apos;s local storage.
+          </p>
         </div>
 
         {error && (
@@ -863,11 +1022,16 @@ export default function StockAnalyzerPage() {
         )}
 
         {results && (
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {results.map((r) => (
-              <ResultCard key={r.ticker} result={r} />
-            ))}
-          </div>
+          <>
+            <div className="mt-10">
+              <RankingSummary results={results} />
+            </div>
+            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {sortedResults.map((r) => (
+                <ResultCard key={r.ticker} result={r} rank={rankByTicker[r.ticker]} />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -10,7 +10,7 @@ export async function POST(request) {
   }
 
   const tickers = Array.isArray(body?.tickers) ? body.tickers : [];
-  const cleaned = [...new Set(tickers.map((t) => String(t).trim().toUpperCase()).filter(Boolean))].slice(0, 10);
+  const cleaned = [...new Set(tickers.map((t) => String(t).trim().toUpperCase()).filter(Boolean))].slice(0, 15);
 
   if (cleaned.length === 0) {
     return NextResponse.json({ error: 'Provide at least one ticker' }, { status: 400 });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import Link from 'next/link';
+import SiteNav from '@/components/SiteNav';
 import { searchTickers, tickerColor } from '@/lib/tickerDirectory';
 import { currencyPrefix } from '@/lib/currency';
 
@@ -134,7 +134,6 @@ function SectorAllocationChart({ data }) {
 
 export default function PortfolioAnalyzerPage() {
   const [holdings, setHoldings] = useState([]);
-  const [activeRegion, setActiveRegion] = useState('US');
   const [input, setInput] = useState('');
   const [pendingTicker, setPendingTicker] = useState(null);
   const [quantity, setQuantity] = useState('');
@@ -177,8 +176,8 @@ export default function PortfolioAnalyzerPage() {
   }, [holdings]);
 
   const localMatches = useMemo(
-    () => searchTickers(input, holdings.map((h) => h.ticker), null, activeRegion),
-    [input, holdings, activeRegion]
+    () => searchTickers(input, holdings.map((h) => h.ticker)),
+    [input, holdings]
   );
 
   useEffect(() => {
@@ -188,7 +187,7 @@ export default function PortfolioAnalyzerPage() {
     }
     const handle = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search-tickers?q=${encodeURIComponent(input.trim())}&region=${activeRegion}`);
+        const res = await fetch(`/api/search-tickers?q=${encodeURIComponent(input.trim())}`);
         if (!res.ok) return;
         const data = await res.json();
         setLiveMatches(data.results || []);
@@ -197,7 +196,7 @@ export default function PortfolioAnalyzerPage() {
       }
     }, 300);
     return () => clearTimeout(handle);
-  }, [input, activeRegion]);
+  }, [input]);
 
   const matches = useMemo(() => {
     const localSymbols = new Set(localMatches.map((m) => m.symbol));
@@ -551,11 +550,8 @@ export default function PortfolioAnalyzerPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      <SiteNav />
       <div className="max-w-6xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
-        <Link href="/" className="text-sm text-purple-400 hover:text-purple-300 transition-colors">
-          ← Back home
-        </Link>
-
         <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl text-center">Portfolio Analyzer</h1>
         <p className="mt-2 text-sm text-gray-400 text-center">
           Add your holdings with quantity and average price, then analyze value, allocation, and gain/loss.
@@ -563,27 +559,6 @@ export default function PortfolioAnalyzerPage() {
 
         {/* Add holding */}
         <div className="mt-8 bg-gray-800 rounded-xl p-5 border border-gray-700/50">
-          <div className="inline-flex rounded-lg border border-gray-700 bg-gray-900 p-0.5 mb-3">
-            <button
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setActiveRegion('US')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                activeRegion === 'US' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              🇺🇸 US
-            </button>
-            <button
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setActiveRegion('SG')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                activeRegion === 'SG' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              🇸🇬 SG
-            </button>
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-2 items-start">
             <div className="relative">
               {pendingTicker ? (
@@ -661,7 +636,7 @@ export default function PortfolioAnalyzerPage() {
             />
             <button
               onClick={handleAddHolding}
-              className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white transition-colors"
+              className="w-full sm:w-auto px-4 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-lg text-sm font-medium text-white transition-colors"
             >
               Add Holding
             </button>
@@ -690,17 +665,20 @@ export default function PortfolioAnalyzerPage() {
             ))}
           </div>
 
-          <div className="mt-4 flex items-center justify-end gap-3">
-            <span className="text-xs text-gray-500">
-              {holdings.length} holding{holdings.length !== 1 ? 's' : ''}
-            </span>
-            <button
-              onClick={analyzePortfolio}
-              disabled={loading || holdings.length === 0}
-              className="w-full sm:w-auto px-6 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors shadow-lg"
-            >
-              {loading ? 'Analyzing…' : 'Analyze Portfolio'}
-            </button>
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <span className="text-[11px] text-gray-600">Holdings are saved to your browser&apos;s local storage.</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-500">
+                {holdings.length} holding{holdings.length !== 1 ? 's' : ''}
+              </span>
+              <button
+                onClick={analyzePortfolio}
+                disabled={loading || holdings.length === 0}
+                className="w-full sm:w-auto px-6 py-2.5 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors shadow-lg"
+              >
+                {loading ? 'Analyzing…' : 'Analyze Portfolio'}
+              </button>
+            </div>
           </div>
         </div>
 
