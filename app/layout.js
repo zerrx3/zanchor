@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
   title: "Zanchor | Portfolio",
@@ -14,6 +15,7 @@ export default function RootLayout({ children }) {
             {children}
           </main>
         </div>
+        <Analytics />
       </body>
     </html>
   );
