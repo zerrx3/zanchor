@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 const STATS = [
-  { value: '4', label: 'Research Tools' },
+  { value: '5', label: 'Research Tools' },
   { value: '13', label: 'Sectors Tracked' },
   { value: 'US + SG', label: 'Markets Covered' },
   { value: '24h', label: 'Data Refresh Cycle' },
@@ -12,19 +12,8 @@ const STATS = [
 
 const TOOLS = [
   {
-    href: '/market-newsletter',
-    tag: '01 · Briefing',
-    title: 'Market Newsletter',
-    description:
-      'Draft a weekly market newsletter from live data — subject lines, a macro overview, a stock spotlight, and a quick watchlist, ready to edit and send.',
-    chips: ['Spotlight', 'Watchlist', 'Bull vs. Bear'],
-    cta: 'Draft this week’s issue',
-    accent: 'purple',
-    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16v12H4V6Zm0 0 8 7 8-7" />,
-  },
-  {
     href: '/portfolio-analyzer',
-    tag: '02 · Portfolio',
+    tag: '01 · Portfolio',
     title: 'Portfolio Analyzer',
     description:
       'Track your holdings in one place — live value, allocation by position, and gain/loss at a glance so you always know where you stand.',
@@ -41,7 +30,7 @@ const TOOLS = [
   },
   {
     href: '/stock-analyzer',
-    tag: '03 · Equities',
+    tag: '02 · Equities',
     title: 'Stock Analyzer',
     description:
       'Score any ticker on valuation, growth, financial health, and momentum, then rank your watchlist by conviction with a full pros vs. cons breakdown.',
@@ -58,7 +47,7 @@ const TOOLS = [
   },
   {
     href: '/swing-strategy',
-    tag: '04 · Swing Trading',
+    tag: '03 · Swing Trading',
     title: 'Swing Strategy',
     description:
       'Confluence entries for 2–14 day swing trades — trend pullback, market structure, and Fibonacci zones overlapped into one setup with stop-loss and take-profit levels.',
@@ -66,6 +55,28 @@ const TOOLS = [
     cta: 'Strategize',
     accent: 'amber',
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h4l3 8 4-16 3 8h4" />,
+  },
+  {
+    href: '/market-newsletter',
+    tag: '04 · Briefing',
+    title: 'Market Newsletter',
+    description:
+      'Draft a weekly market newsletter from live data — subject lines, a macro overview, a stock spotlight, and a quick watchlist, ready to edit and send.',
+    chips: ['Spotlight', 'Watchlist', 'Bull vs. Bear'],
+    cta: 'Draft this week’s issue',
+    accent: 'purple',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16v12H4V6Zm0 0 8 7 8-7" />,
+  },
+  {
+    href: '/sector-rotation',
+    tag: '05 · Heatmap',
+    title: 'Sector Rotation',
+    description:
+      'See which parts of the market are leading or lagging — average performance across every curated sector, over 1W/1M/3M, US and SG.',
+    chips: ['Heatmap', 'US + SG', 'Multi-Timeframe'],
+    cta: 'View heatmap',
+    accent: 'rose',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 19h4v-6H4v6Zm6 0h4V9h-4v10Zm6 0h4V4h-4v15Z" />,
   },
 ];
 
@@ -97,6 +108,13 @@ const ACCENT_STYLES = {
     iconWrap: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
     chip: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
     cta: 'text-amber-400 group-hover:text-amber-300',
+  },
+  rose: {
+    border: 'hover:border-rose-500/50',
+    glow: 'group-hover:shadow-[0_0_40px_-8px_rgba(244,63,94,0.35)]',
+    iconWrap: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+    chip: 'bg-rose-500/10 text-rose-300 border-rose-500/20',
+    cta: 'text-rose-400 group-hover:text-rose-300',
   },
 };
 

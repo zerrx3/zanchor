@@ -14,59 +14,15 @@ import {
   Cell,
   Tooltip,
 } from 'recharts';
-import { searchTickers, tickerColor, getSectorsForRegion } from '@/lib/tickerDirectory';
+import {
+  searchTickers,
+  tickerColor,
+  getSectorsForRegion,
+  SECTOR_STYLES,
+  SECTOR_TAB_ACTIVE_STYLES,
+  SECTOR_EMOJI,
+} from '@/lib/tickerDirectory';
 import { currencyPrefix } from '@/lib/currency';
-
-const SECTOR_STYLES = {
-  MAG7: 'bg-fuchsia-500/15 text-fuchsia-300',
-  Software: 'bg-blue-500/15 text-blue-300',
-  Cybersecurity: 'bg-sky-500/15 text-sky-300',
-  Consumer: 'bg-pink-500/15 text-pink-300',
-  Auto: 'bg-orange-500/15 text-orange-300',
-  Finance: 'bg-emerald-500/15 text-emerald-300',
-  Energy: 'bg-yellow-500/15 text-yellow-300',
-  Mining: 'bg-amber-500/15 text-amber-300',
-  Industrial: 'bg-gray-500/15 text-gray-300',
-  Biotech: 'bg-violet-500/15 text-violet-300',
-  Semis: 'bg-indigo-500/15 text-indigo-300',
-  Defence: 'bg-rose-500/15 text-rose-300',
-  REITs: 'bg-teal-500/15 text-teal-300',
-  Space: 'bg-cyan-500/15 text-cyan-300',
-};
-
-const SECTOR_TAB_ACTIVE_STYLES = {
-  MAG7: 'bg-fuchsia-500/20 text-fuchsia-200 border-fuchsia-500/50',
-  Software: 'bg-blue-500/20 text-blue-200 border-blue-500/50',
-  Cybersecurity: 'bg-sky-500/20 text-sky-200 border-sky-500/50',
-  Consumer: 'bg-pink-500/20 text-pink-200 border-pink-500/50',
-  Auto: 'bg-orange-500/20 text-orange-200 border-orange-500/50',
-  Finance: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50',
-  Energy: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50',
-  Mining: 'bg-amber-500/20 text-amber-200 border-amber-500/50',
-  Industrial: 'bg-gray-500/20 text-gray-200 border-gray-500/50',
-  Biotech: 'bg-violet-500/20 text-violet-200 border-violet-500/50',
-  Semis: 'bg-indigo-500/20 text-indigo-200 border-indigo-500/50',
-  Defence: 'bg-rose-500/20 text-rose-200 border-rose-500/50',
-  REITs: 'bg-teal-500/20 text-teal-200 border-teal-500/50',
-  Space: 'bg-cyan-500/20 text-cyan-200 border-cyan-500/50',
-};
-
-const SECTOR_EMOJI = {
-  MAG7: '7️⃣',
-  Software: '💾',
-  Cybersecurity: '🔒',
-  Consumer: '🛒',
-  Auto: '🚗',
-  Finance: '🏦',
-  Energy: '⚡',
-  Mining: '⛏️',
-  Industrial: '🏗️',
-  Biotech: '🧬',
-  Semis: '🔩',
-  Defence: '🛡️',
-  REITs: '🏢',
-  Space: '🚀',
-};
 
 const AVATAR_SIZES = {
   xs: 'w-5 h-5 text-[9px]',
@@ -535,7 +491,117 @@ function ResultCard({ result, rank }) {
   );
 }
 
-const CACHE_PREFIX = 'stockAnalyzer:v2:'; // bumped: v1 entries predate the `sector` field
+const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+// Ring color gives an at-a-glance read on historical earnings-day
+// volatility for that ticker, without needing to hover the tooltip.
+// Used when a day has more than one ticker, so each chip can carry its own
+// risk read independently of the others sharing the slot.
+function moveRingClass(pct) {
+  if (pct == null) return 'ring-1 ring-gray-700';
+  if (pct >= 8) return 'ring-2 ring-red-400';
+  if (pct >= 4) return 'ring-2 ring-amber-400';
+  return 'ring-1 ring-gray-600';
+}
+
+// When a day has exactly one ticker, the whole slot carries the risk color
+// instead — more visible than a thin ring on a 16px chip.
+function moveSlotClass(pct) {
+  if (pct >= 8) return 'border-red-400 bg-red-500/15';
+  if (pct >= 4) return 'border-amber-400 bg-amber-500/15';
+  return 'border-purple-500/30 bg-purple-500/5';
+}
+
+function buildMonthCells(year, month) {
+  const firstDay = new Date(year, month, 1);
+  const startWeekday = (firstDay.getDay() + 6) % 7; // Monday-first
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+  return cells;
+}
+
+function MonthCalendar({ year, month, byDate }) {
+  const cells = useMemo(() => buildMonthCells(year, month), [year, month]);
+  const monthLabel = new Date(year, month, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  return (
+    <div className="rounded-xl border border-gray-700/50 bg-gray-900/40 p-3">
+      <div className="text-sm font-semibold text-white text-center mb-2">{monthLabel}</div>
+      <div className="grid grid-cols-7 gap-1 text-[9px] text-gray-500 uppercase text-center mb-1">
+        {WEEKDAY_LABELS.map((w) => (
+          <div key={w}>{w}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((day, i) => {
+          if (day == null) return <div key={i} />;
+          const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const entries = byDate[iso] || [];
+          const isToday = iso === todayIso;
+          return (
+            <div
+              key={i}
+              tabIndex={entries.length > 0 ? 0 : undefined}
+              className={`relative group/day min-h-[42px] rounded-md border p-1 focus:outline-none focus:ring-1 focus:ring-emerald-400 ${
+                isToday
+                  ? 'border-emerald-400 bg-emerald-500/20'
+                  : entries.length === 1
+                  ? moveSlotClass(entries[0].avgEarningsMovePct)
+                  : entries.length > 1
+                  ? 'border-purple-500/30 bg-purple-500/5'
+                  : 'border-gray-800'
+              }`}
+            >
+              <div
+                className={
+                  isToday
+                    ? 'inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-400 text-gray-950 text-[9px] font-bold'
+                    : 'text-[9px] text-gray-600'
+                }
+              >
+                {day}
+              </div>
+              <div className="flex flex-wrap gap-0.5 mt-0.5">
+                {entries.slice(0, 3).map((r) => (
+                  <span
+                    key={r.ticker}
+                    className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[7px] font-bold text-white cursor-default ${
+                      entries.length === 1 ? '' : moveRingClass(r.avgEarningsMovePct)
+                    }`}
+                    style={{ backgroundColor: tickerColor(r.ticker) }}
+                  >
+                    {r.ticker.slice(0, 2)}
+                  </span>
+                ))}
+                {entries.length > 3 && <span className="text-[8px] text-gray-500 self-center">+{entries.length - 3}</span>}
+              </div>
+
+              {entries.length > 0 && (
+                <div className="pointer-events-none absolute left-1/2 bottom-full z-30 mb-1.5 hidden w-max max-w-[12rem] -translate-x-1/2 rounded-lg border border-gray-700 bg-gray-950 px-2.5 py-1.5 text-left shadow-xl group-hover/day:block group-focus/day:block">
+                  {entries.map((r) => (
+                    <div key={r.ticker} className="py-1 border-b border-gray-800 last:border-0 last:pb-0 first:pt-0">
+                      <span className="block text-xs font-semibold text-white">{r.ticker}</span>
+                      <span className="block text-[10px] text-gray-400 whitespace-normal">{r.name}</span>
+                      {r.avgEarningsMovePct != null && (
+                        <span className="block text-[10px] text-gray-500">avg move ±{r.avgEarningsMovePct.toFixed(1)}%</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const CACHE_PREFIX = 'stockAnalyzer:v5:'; // bumped: v4 entries predate avgEarningsMovePct
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 1 day
 const SELECTION_STORAGE_KEY = 'stockAnalyzer:selection:v1';
 
@@ -646,6 +712,26 @@ export default function StockAnalyzerPage() {
       return rankA - rankB;
     });
   }, [results, rankByTicker]);
+
+  // Places each analyzed ticker (with a known next earnings date) onto the
+  // calendar day it falls on, across the current month and the next two.
+  const earningsCalendarData = useMemo(() => {
+    if (!results) return null;
+    const byDate = {};
+    for (const r of results) {
+      if (r.error || !r.nextEarningsDate) continue;
+      if (!byDate[r.nextEarningsDate]) byDate[r.nextEarningsDate] = [];
+      byDate[r.nextEarningsDate].push(r);
+    }
+    if (Object.keys(byDate).length === 0) return null;
+
+    const today = new Date();
+    const months = [0, 1, 2].map((offset) => {
+      const d = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+      return { year: d.getFullYear(), month: d.getMonth() };
+    });
+    return { byDate, months };
+  }, [results]);
 
   function setTickers(updater) {
     setTickersByRegion((prev) => {
@@ -867,7 +953,7 @@ export default function StockAnalyzerPage() {
                   Clear all
                 </button>
               )}
-              <span className="text-xs text-gray-600">{tickers.length}/10</span>
+              <span className="text-xs text-gray-600">{tickers.length}/15</span>
             </span>
           </div>
           <div
@@ -1026,7 +1112,27 @@ export default function StockAnalyzerPage() {
             <div className="mt-10">
               <RankingSummary results={results} />
             </div>
-            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+
+            {earningsCalendarData && (
+              <div className="mt-10">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
+                  Earnings Calendar — Next 3 Months
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {earningsCalendarData.months.map(({ year, month }) => (
+                    <MonthCalendar key={`${year}-${month}`} year={year} month={month} byDate={earningsCalendarData.byDate} />
+                  ))}
+                </div>
+                <p className="mt-3 text-[11px] text-gray-600 text-center">
+                  Chip ring color flags historical earnings-day volatility (red ≥8%, amber ≥4% average move) — hover
+                  any day with tickers to see the full names and exact figures. Estimated from the biggest single-day
+                  move in the weeks typically following each past reported quarter, since Yahoo only reports the
+                  fiscal quarter-end date.
+                </p>
+              </div>
+            )}
+
+            <div className="mt-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {sortedResults.map((r) => (
                 <ResultCard key={r.ticker} result={r} rank={rankByTicker[r.ticker]} />
               ))}

@@ -7,9 +7,10 @@ import { currencyPrefix } from '@/lib/currency';
 
 // Shares the same cache as Stock Analyzer (same prefix/TTL) — if you already
 // analyzed a ticker there, Portfolio Analyzer reuses it instead of refetching.
-const CACHE_PREFIX = 'stockAnalyzer:v2:'; // bumped: v1 entries predate the `sector` field
+const CACHE_PREFIX = 'stockAnalyzer:v5:'; // bumped: v4 entries predate avgEarningsMovePct
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const HOLDINGS_STORAGE_KEY = 'portfolioAnalyzer:holdings:v1';
+const UPCOMING_WINDOW_MONTHS = 3;
 
 function getCached(ticker) {
   try {
@@ -148,6 +149,7 @@ export default function PortfolioAnalyzerPage() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [error, setError] = useState(null);
+  const [dividendSectionOpen, setDividendSectionOpen] = useState(false);
   const inputRef = useRef(null);
   const isFirstSaveRef = useRef(true);
 
@@ -320,6 +322,15 @@ export default function PortfolioAnalyzerPage() {
       });
 
       setResults(merged);
+
+      // Default the display currency to whichever region makes up the
+      // majority of the holdings by count, so an SG-heavy portfolio doesn't
+      // default to USD (and vice versa) until the user manually toggles it.
+      const valid = merged.filter((h) => !h.error && h.analysis?.currency);
+      if (valid.length > 0) {
+        const sgdCount = valid.filter((h) => h.analysis.currency === 'SGD').length;
+        setDisplayCurrency(sgdCount > valid.length / 2 ? 'SGD' : 'USD');
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -382,6 +393,58 @@ export default function PortfolioAnalyzerPage() {
       .map(([sector, value]) => ({ sector, value, pct: (value / totals.totalValueUSD) * 100 }))
       .sort((a, b) => b.value - a.value);
   }, [results, totals]);
+
+  // Annual dividend income projected from each holding's quantity × the
+  // per-share dividend rate Yahoo reports (lib/stockAnalysis.js), converted
+  // to the display currency the same way totals/sectorAllocation are.
+  const dividendIncome = useMemo(() => {
+    if (!results || !totals || totals.totalValueUSD <= 0) return null;
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const windowEndIso = (() => {
+      const d = new Date();
+      d.setMonth(d.getMonth() + UPCOMING_WINDOW_MONTHS);
+      return d.toISOString().slice(0, 10);
+    })();
+    let totalAnnualIncomeUSD = 0;
+    const upcoming = [];
+    const holdings = [];
+
+    for (const r of results) {
+      if (r.error || !r.analysis?.dividendRate || r.analysis.dividendRate <= 0) continue;
+      const currency = r.analysis.currency;
+      const fx = !currency || currency === 'USD' ? 1 : fxRates[currency];
+      if (fx == null) continue;
+
+      const annualIncomeUSD = r.quantity * r.analysis.dividendRate * fx;
+      totalAnnualIncomeUSD += annualIncomeUSD;
+
+      holdings.push({
+        ticker: r.ticker,
+        dividendYield: r.analysis.dividendYield,
+        dividendMonths: r.analysis.dividendMonths || [],
+        annualIncomeUSD,
+      });
+
+      if (r.analysis.exDividendDate && r.analysis.exDividendDate >= todayIso && r.analysis.exDividendDate <= windowEndIso) {
+        upcoming.push({ ticker: r.ticker, exDividendDate: r.analysis.exDividendDate });
+      }
+    }
+
+    if (totalAnnualIncomeUSD <= 0) return null;
+
+    upcoming.sort((a, b) => a.exDividendDate.localeCompare(b.exDividendDate));
+    holdings.sort((a, b) => b.annualIncomeUSD - a.annualIncomeUSD);
+
+    return {
+      totalAnnualIncomeUSD,
+      displayTotalAnnualIncome: fromUSD(totalAnnualIncomeUSD, displayCurrency),
+      portfolioYieldPct: (totalAnnualIncomeUSD / totals.totalValueUSD) * 100,
+      upcoming,
+      holdings,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results, totals, displayCurrency, fxRates]);
 
   // Portfolio-level narrative: synthesizes concentration risk, a
   // value-weighted quality score across holdings, and performance — built
@@ -791,6 +854,115 @@ export default function PortfolioAnalyzerPage() {
               <div className="bg-gray-800 rounded-xl p-5 border border-gray-700/50">
                 <h3 className="text-sm font-semibold text-gray-300 mb-3">Sector Allocation</h3>
                 <SectorAllocationChart data={sectorAllocation} />
+              </div>
+            )}
+
+            {/* Dividend income */}
+            {dividendIncome && (
+              <div className="bg-gray-800 rounded-xl p-5 border border-gray-700/50">
+                <h3 className="text-sm font-semibold text-gray-300 mb-3">Dividend Income</h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wide text-gray-500">Annual Income</div>
+                    <div className="mt-1 font-mono text-lg font-semibold text-emerald-300">
+                      {dividendIncome.displayTotalAnnualIncome != null
+                        ? `${currencyPrefix(displayCurrency)}${dividendIncome.displayTotalAnnualIncome.toFixed(2)}`
+                        : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wide text-gray-500">Monthly Estimate</div>
+                    <div className="mt-1 font-mono text-lg font-semibold text-gray-200">
+                      {dividendIncome.displayTotalAnnualIncome != null
+                        ? `${currencyPrefix(displayCurrency)}${(dividendIncome.displayTotalAnnualIncome / 12).toFixed(2)}`
+                        : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wide text-gray-500">Portfolio Yield</div>
+                    <div className="mt-1 font-mono text-lg font-semibold text-gray-200">{dividendIncome.portfolioYieldPct.toFixed(2)}%</div>
+                  </div>
+                </div>
+
+                {dividendIncome.upcoming.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-gray-700/60">
+                    <div className="text-[11px] uppercase tracking-wide text-gray-500 mb-2">
+                      Upcoming Ex-Dividend Dates (Next {UPCOMING_WINDOW_MONTHS} Months)
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {dividendIncome.upcoming.map((u) => (
+                        <span key={u.ticker} className="text-xs bg-gray-900/60 rounded-lg px-2.5 py-1">
+                          <span className="text-white font-medium">{u.ticker}</span>{' '}
+                          <span className="text-gray-400">{u.exDividendDate}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-4 pt-3 border-t border-gray-700/60">
+                  <button
+                    onClick={() => setDividendSectionOpen((v) => !v)}
+                    className="w-full flex items-center justify-between text-left"
+                  >
+                    <div className="text-[11px] uppercase tracking-wide text-gray-500">By Holding</div>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`text-gray-500 transition-transform ${dividendSectionOpen ? 'rotate-180' : ''}`}
+                    >
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </button>
+
+                  {dividendSectionOpen && (
+                    <div className="mt-2 space-y-1.5">
+                      {dividendIncome.holdings.map((h) => {
+                        const displayAnnual = fromUSD(h.annualIncomeUSD, displayCurrency);
+                        const perPayout =
+                          h.dividendMonths.length > 0 && displayAnnual != null ? displayAnnual / h.dividendMonths.length : null;
+                        return (
+                          <div key={h.ticker} className="flex items-center gap-3 bg-gray-900/60 rounded-lg px-3 py-2 text-sm">
+                            <span className="text-white font-medium w-16">{h.ticker}</span>
+                            <span className="text-gray-400 w-20">
+                              {h.dividendYield != null ? `${h.dividendYield.toFixed(2)}% yield` : 'N/A'}
+                            </span>
+                            <span className="text-gray-500 flex-1 truncate">
+                              {h.dividendMonths.length > 0 ? `Paid: ${h.dividendMonths.join(', ')}` : 'Payout months unknown'}
+                            </span>
+                            <div className="flex items-stretch divide-x divide-gray-700 shrink-0">
+                              <div className="px-3 text-right">
+                                <div className="text-[9px] uppercase tracking-wide text-gray-600">Per Payout</div>
+                                <div className="font-mono text-xs text-gray-300">
+                                  {perPayout != null ? `${currencyPrefix(displayCurrency)}${perPayout.toFixed(2)}` : 'N/A'}
+                                </div>
+                              </div>
+                              <div className="pl-3 text-right">
+                                <div className="text-[9px] uppercase tracking-wide text-gray-600">Per Year</div>
+                                <div className="font-mono text-xs text-gray-200">
+                                  {displayAnnual != null ? `${currencyPrefix(displayCurrency)}${displayAnnual.toFixed(2)}` : '—'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <p className="mt-4 text-[11px] text-gray-600 text-center">
+                  Monthly estimate is the annual figure ÷ 12 and doesn&apos;t model actual payout timing. Payout
+                  months are inferred from each ticker's dividend history over the past ~13 months; the per-payout
+                  amount is simply the annual income divided by the number of payouts.
+                </p>
               </div>
             )}
 

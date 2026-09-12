@@ -11,18 +11,6 @@ const NAV_ITEMS = [
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 11.5 12 4l9 7.5M5 10v9h14v-9" />,
   },
   {
-    href: '/market-newsletter',
-    label: 'Market Newsletter',
-    accent: 'purple',
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M4 6h16v12H4V6Zm0 0 8 7 8-7"
-      />
-    ),
-  },
-  {
     href: '/portfolio-analyzer',
     label: 'Portfolio Analyzer',
     accent: 'cyan',
@@ -40,6 +28,24 @@ const NAV_ITEMS = [
     accent: 'amber',
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h4l3 8 4-16 3 8h4" />,
   },
+  {
+    href: '/market-newsletter',
+    label: 'Market Newsletter',
+    accent: 'purple',
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4 6h16v12H4V6Zm0 0 8 7 8-7"
+      />
+    ),
+  },
+  {
+    href: '/sector-rotation',
+    label: 'Sector Rotation',
+    accent: 'rose',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 19h4v-6H4v6Zm6 0h4V9h-4v10Zm6 0h4V4h-4v15Z" />,
+  },
 ];
 
 const ACCENT_ACTIVE = {
@@ -48,6 +54,7 @@ const ACCENT_ACTIVE = {
   emerald: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
   purple: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
   amber: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+  rose: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
 };
 
 export default function SiteNav() {
