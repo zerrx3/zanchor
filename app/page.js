@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { CHANGELOG } from '@/lib/changelog';
 
 const STATS = [
   { value: '5', label: 'Research Tools' },
@@ -494,6 +495,44 @@ export default function HomePage() {
                 </Link>
               );
             })}
+          </div>
+        </section>
+
+        {/* Changelog */}
+        <section id="changelog" className="pb-16">
+          <div className="mb-10 text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              Change
+              <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+                log
+              </span>
+            </h2>
+            <div className="mx-auto mt-3 h-px w-16 bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent" />
+          </div>
+
+          <div className="mx-auto max-w-3xl space-y-5">
+            {CHANGELOG.map((entry) => (
+              <div
+                key={entry.version}
+                className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6 backdrop-blur"
+              >
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-300">
+                    {entry.version}
+                  </span>
+                  <h3 className="text-base font-semibold text-white">{entry.title}</h3>
+                  <span className="ml-auto font-mono text-xs text-gray-600">{entry.date}</span>
+                </div>
+                <ul className="mt-4 space-y-2">
+                  {entry.changes.map((change, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-600" aria-hidden />
+                      {change}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </section>
 
