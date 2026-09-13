@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import { CHANGELOG } from '@/lib/changelog';
 
 const STATS = [
-  { value: '5', label: 'Research Tools' },
-  { value: '13', label: 'Sectors Tracked' },
+  { value: '6', label: 'Research Tools' },
+  { value: '15', label: 'Sectors Tracked' },
   { value: 'US + SG', label: 'Markets Covered' },
   { value: '24h', label: 'Data Refresh Cycle' },
 ];
@@ -58,15 +58,21 @@ const TOOLS = [
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h4l3 8 4-16 3 8h4" />,
   },
   {
-    href: '/market-newsletter',
-    tag: '04 · Briefing',
-    title: 'Market Newsletter',
+    href: '/screener',
+    tag: '04 · Ranking',
+    title: 'Screener',
     description:
-      'Draft a weekly market newsletter from live data — subject lines, a macro overview, a stock spotlight, and a quick watchlist, ready to edit and send.',
-    chips: ['Spotlight', 'Watchlist', 'Bull vs. Bear'],
-    cta: 'Draft this week’s issue',
-    accent: 'purple',
-    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16v12H4V6Zm0 0 8 7 8-7" />,
+      'Pick a sector and screen every curated ticker in it at once — scored, ranked, and filterable by minimum score, dividend yield, or days to earnings.',
+    chips: ['Sector Scan', 'Ranked Table', 'Filterable'],
+    cta: 'Run a screen',
+    accent: 'orange',
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M10 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm8 16-4.35-4.35"
+      />
+    ),
   },
   {
     href: '/sector-rotation',
@@ -78,6 +84,17 @@ const TOOLS = [
     cta: 'View heatmap',
     accent: 'rose',
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 19h4v-6H4v6Zm6 0h4V9h-4v10Zm6 0h4V4h-4v15Z" />,
+  },
+  {
+    href: '/market-newsletter',
+    tag: '06 · Briefing',
+    title: 'Market Newsletter',
+    description:
+      'Draft a weekly market newsletter from live data — subject lines, a macro overview, a stock spotlight, and a quick watchlist, ready to edit and send.',
+    chips: ['Spotlight', 'Watchlist', 'Bull vs. Bear'],
+    cta: 'Draft this week’s issue',
+    accent: 'purple',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16v12H4V6Zm0 0 8 7 8-7" />,
   },
 ];
 
@@ -116,6 +133,13 @@ const ACCENT_STYLES = {
     iconWrap: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
     chip: 'bg-rose-500/10 text-rose-300 border-rose-500/20',
     cta: 'text-rose-400 group-hover:text-rose-300',
+  },
+  orange: {
+    border: 'hover:border-orange-500/50',
+    glow: 'group-hover:shadow-[0_0_40px_-8px_rgba(249,115,22,0.35)]',
+    iconWrap: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+    chip: 'bg-orange-500/10 text-orange-300 border-orange-500/20',
+    cta: 'text-orange-400 group-hover:text-orange-300',
   },
 };
 
@@ -511,7 +535,7 @@ export default function HomePage() {
           </div>
 
           <div className="mx-auto max-w-3xl space-y-5">
-            {CHANGELOG.map((entry) => (
+            {CHANGELOG.slice(0, 1).map((entry) => (
               <div
                 key={entry.version}
                 className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6 backdrop-blur"

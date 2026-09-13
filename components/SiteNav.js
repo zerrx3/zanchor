@@ -29,6 +29,18 @@ const NAV_ITEMS = [
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h4l3 8 4-16 3 8h4" />,
   },
   {
+    href: '/screener',
+    label: 'Screener',
+    accent: 'orange',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M10 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm8 16-4.35-4.35" />,
+  },
+  {
+    href: '/sector-rotation',
+    label: 'Sector Rotation',
+    accent: 'rose',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 19h4v-6H4v6Zm6 0h4V9h-4v10Zm6 0h4V4h-4v15Z" />,
+  },
+  {
     href: '/market-newsletter',
     label: 'Market Newsletter',
     accent: 'purple',
@@ -40,12 +52,6 @@ const NAV_ITEMS = [
       />
     ),
   },
-  {
-    href: '/sector-rotation',
-    label: 'Sector Rotation',
-    accent: 'rose',
-    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 19h4v-6H4v6Zm6 0h4V9h-4v10Zm6 0h4V4h-4v15Z" />,
-  },
 ];
 
 const ACCENT_ACTIVE = {
@@ -55,6 +61,7 @@ const ACCENT_ACTIVE = {
   purple: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
   amber: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
   rose: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+  orange: 'bg-orange-500/15 text-orange-300 border-orange-500/30',
 };
 
 export default function SiteNav() {

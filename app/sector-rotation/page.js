@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import SiteNav from '@/components/SiteNav';
 import { SECTOR_EMOJI } from '@/lib/tickerDirectory';
 
-const CACHE_TTL_MS = 20 * 60 * 1000;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 1 day, matches the rest of the app
 
 function cacheKey(region) {
   return `sectorRotation:${region}:v1`;
@@ -57,7 +57,11 @@ export default function SectorRotationPage() {
   const [timeframe, setTimeframe] = useState('oneMonthPct');
   const [sectors, setSectors] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hasRefreshed, setHasRefreshed] = useState(false);
   const [error, setError] = useState(null);
+  const regionRef = useRef(region);
+  regionRef.current = region;
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +92,30 @@ export default function SectorRotationPage() {
       cancelled = true;
     };
   }, [region]);
+
+  function refresh() {
+    const regionAtStart = region;
+    setRefreshing(true);
+    setHasRefreshed(true);
+    setError(null);
+
+    fetch(`/api/sector-rotation?region=${regionAtStart}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load sector performance');
+        return res.json();
+      })
+      .then((data) => {
+        if (regionRef.current !== regionAtStart) return;
+        setSectors(data.sectors);
+        setCached(regionAtStart, data.sectors);
+      })
+      .catch((err) => {
+        if (regionRef.current === regionAtStart) setError(err.message);
+      })
+      .finally(() => {
+        if (regionRef.current === regionAtStart) setRefreshing(false);
+      });
+  }
 
   const sortedSectors = useMemo(() => {
     if (!sectors) return null;
@@ -136,6 +164,26 @@ export default function SectorRotationPage() {
               </button>
             ))}
           </div>
+          <button
+            onClick={refresh}
+            disabled={loading || refreshing || hasRefreshed}
+            title={hasRefreshed ? 'Already refreshed — reload the page to refresh again' : 'Refresh (bypasses the 24h cache)'}
+            className="flex items-center gap-1.5 rounded-lg border border-gray-700/50 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
+            >
+              <path d="M3 12a9 9 0 0 1 15.3-6.4L21 8M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-15.3 6.4L3 16M3 21v-5h5" />
+            </svg>
+            Refresh
+          </button>
         </div>
 
         {error && (

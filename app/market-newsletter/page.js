@@ -6,8 +6,8 @@ import { searchTickers, tickerColor } from '@/lib/tickerDirectory';
 import { currencyPrefix } from '@/lib/currency';
 
 const TONES = [
-  { value: 'curiosity', label: 'Curious & Engaging' },
   { value: 'data', label: 'Objective & Data-First' },
+  { value: 'curiosity', label: 'Curious & Engaging' },
   { value: 'direct', label: 'Concise & Direct' },
 ];
 
@@ -479,6 +479,10 @@ export default function MarketNewsletterPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-white text-sm">{w.ticker}</span>
+                            <span className="font-mono text-sm text-gray-200">
+                              {currencyPrefix(w.currency)}
+                              {w.price?.toFixed(2)}
+                            </span>
                             <ChangeBadge pct={w.weeklyChangePct} />
                             {w.consensusRating && (
                               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border whitespace-nowrap ${ratingStyle(w.consensusRating)}`}>
@@ -486,14 +490,14 @@ export default function MarketNewsletterPage() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-gray-400 mt-1 leading-relaxed">{w.rationale}</p>
-
                           {w.nextEarningsDate && (
-                            <p className="mt-1.5 text-[11px] text-gray-500">
+                            <p className="mt-1 text-[11px] text-gray-500">
                               Next earnings: <span className="text-gray-400">{w.nextEarningsDate}</span>
                               {w.daysToEarnings != null && ` (${w.daysToEarnings}d away)`}
                             </p>
                           )}
+
+                          <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">{w.rationale}</p>
 
                           {w.recommendationShift && (
                             <p className="mt-1 text-[11px] text-gray-500">
