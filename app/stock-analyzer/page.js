@@ -231,6 +231,19 @@ function CategoryChart({ metrics }) {
   );
 }
 
+const SIGNED_PCT_SUFFIX = /^(.*) \(([+-]\d[\d.]*%)\)$/;
+
+function MetricValue({ metric }) {
+  const match = SIGNED_PCT_SUFFIX.exec(metric.valueDisplay);
+  if (!match) return <span className="text-gray-200">{metric.valueDisplay}</span>;
+  const [, base, pct] = match;
+  return (
+    <span className="text-gray-200">
+      {base} (<span className={pct.startsWith('-') ? 'text-red-400' : 'text-emerald-400'}>{pct}</span>)
+    </span>
+  );
+}
+
 function MetricsList({ metrics }) {
   const categories = [...new Set(metrics.map((m) => m.category))];
   return (
@@ -248,7 +261,7 @@ function MetricsList({ metrics }) {
                     <InfoTooltip text={METRIC_INFO[m.label]} />
                   </span>
                   <span className="flex items-center gap-2">
-                    <span className="text-gray-200">{m.valueDisplay}</span>
+                    <MetricValue metric={m} />
                     {m.points !== null ? (
                       <span
                         className={`text-xs font-mono px-1.5 py-0.5 rounded ${
@@ -313,7 +326,7 @@ function ReasonList({ title, items, tone }) {
   );
 }
 
-function RankingRow({ rank, result, expanded, onToggle }) {
+function RankingRow({ rank, result, expanded, onToggle, onJumpToMetrics }) {
   const { pros, cons } = useMemo(() => reasonsFor(result), [result]);
 
   return (
@@ -351,13 +364,21 @@ function RankingRow({ rank, result, expanded, onToggle }) {
           {pros.length === 0 && cons.length === 0 && (
             <p className="text-xs text-gray-500">No standout factors either way — data was mostly neutral.</p>
           )}
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={() => onJumpToMetrics(result.ticker)}
+              className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+            >
+              Jump to metrics ↓
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function RankingSummary({ results }) {
+function RankingSummary({ results, onJumpToMetrics }) {
   const [expandedTicker, setExpandedTicker] = useState(null);
 
   const ranked = useMemo(() => {
@@ -386,6 +407,7 @@ function RankingSummary({ results }) {
               result={r}
               expanded={expandedTicker === r.ticker}
               onToggle={() => setExpandedTicker((prev) => (prev === r.ticker ? null : r.ticker))}
+              onJumpToMetrics={onJumpToMetrics}
             />
           );
         })}
@@ -403,8 +425,13 @@ function RankingSummary({ results }) {
   );
 }
 
-function ResultCard({ result, rank }) {
+function ResultCard({ result, rank, jumpSignal }) {
   const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (jumpSignal == null) return;
+    document.getElementById(`metrics-${result.ticker}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [jumpSignal, result.ticker]);
 
   if (result.error) {
     return (
@@ -440,9 +467,11 @@ function ResultCard({ result, rank }) {
 
       <PriceTargetBar price={result.price} targetPrice={result.targetPrice} currency={result.currency} />
 
-      <ScoreGauge score={result.compositeScorePct} />
+      <div id={`metrics-${result.ticker}`} className="flex flex-col gap-4 scroll-mt-4">
+        <ScoreGauge score={result.compositeScorePct} />
 
-      <CategoryChart metrics={result.metrics} />
+        <CategoryChart metrics={result.metrics} />
+      </div>
 
       <div className="text-xs text-gray-500 text-center">Data coverage: {result.dataCoveragePct}%</div>
 
@@ -649,6 +678,7 @@ export default function StockAnalyzerPage() {
   const activeRegionRef = useRef(activeRegion);
   activeRegionRef.current = activeRegion;
   const [liveMatches, setLiveMatches] = useState([]);
+  const [metricsJump, setMetricsJump] = useState(null);
   const inputRef = useRef(null);
   const isFirstSaveRef = useRef(true);
 
@@ -1110,7 +1140,10 @@ export default function StockAnalyzerPage() {
         {results && (
           <>
             <div className="mt-10">
-              <RankingSummary results={results} />
+              <RankingSummary
+                results={results}
+                onJumpToMetrics={(ticker) => setMetricsJump({ ticker, nonce: Date.now() })}
+              />
             </div>
 
             {earningsCalendarData && (
@@ -1134,7 +1167,12 @@ export default function StockAnalyzerPage() {
 
             <div className="mt-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {sortedResults.map((r) => (
-                <ResultCard key={r.ticker} result={r} rank={rankByTicker[r.ticker]} />
+                <ResultCard
+                  key={r.ticker}
+                  result={r}
+                  rank={rankByTicker[r.ticker]}
+                  jumpSignal={metricsJump?.ticker === r.ticker ? metricsJump.nonce : null}
+                />
               ))}
             </div>
           </>

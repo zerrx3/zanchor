@@ -143,6 +143,9 @@ export default function PortfolioAnalyzerPage() {
   const [highlightIndex, setHighlightIndex] = useState(0);
   const [liveMatches, setLiveMatches] = useState([]);
   const [addError, setAddError] = useState(null);
+  const [editingTicker, setEditingTicker] = useState(null);
+  const [editQty, setEditQty] = useState('');
+  const [editPrice, setEditPrice] = useState('');
   const [results, setResults] = useState(null);
   const [fxRates, setFxRates] = useState({ USD: 1 });
   const [displayCurrency, setDisplayCurrency] = useState('USD');
@@ -244,6 +247,62 @@ export default function PortfolioAnalyzerPage() {
   function removeHolding(ticker) {
     setHoldings((prev) => prev.filter((h) => h.ticker !== ticker));
     setResults((prev) => (prev ? prev.filter((r) => r.ticker !== ticker) : prev));
+  }
+
+  function startEditHolding(h) {
+    setEditingTicker(h.ticker);
+    setEditQty(String(h.quantity));
+    setEditPrice(String(h.avgPrice));
+  }
+
+  function cancelEditHolding() {
+    setEditingTicker(null);
+    setEditQty('');
+    setEditPrice('');
+  }
+
+  function csvCell(value) {
+    const s = String(value);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
+  function exportHoldingsCSV() {
+    if (!results) {
+      setError('Run "Analyze Portfolio" first so values can be converted to a common currency for export.');
+      return;
+    }
+
+    let totalValue = 0;
+    const rows = [['Ticker', 'Name', 'Quantity', 'Avg Price', `Total Value (${displayCurrency})`]];
+    for (const h of holdings) {
+      const r = results.find((res) => res.ticker === h.ticker && !res.error);
+      const value = r?.costUSD != null ? fromUSD(r.costUSD, displayCurrency) : null;
+      if (value != null) totalValue += value;
+      rows.push([h.ticker, h.name, h.quantity, h.avgPrice, value != null ? value.toFixed(2) : 'N/A']);
+    }
+    rows.push(['', '', '', 'Total Portfolio Value', totalValue.toFixed(2)]);
+
+    const csv = rows.map((row) => row.map(csvCell).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `zanchor-portfolio-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function saveEditHolding(ticker) {
+    const qty = parseFloat(editQty);
+    const price = parseFloat(editPrice);
+    if (!qty || qty <= 0 || !price || price <= 0) return;
+    setHoldings((prev) =>
+      prev.map((h) => (h.ticker === ticker ? { ...h, quantity: qty, avgPrice: price } : h))
+    );
+    setResults(null);
+    cancelEditHolding();
   }
 
   async function analyzePortfolio() {
@@ -421,6 +480,7 @@ export default function PortfolioAnalyzerPage() {
 
       holdings.push({
         ticker: r.ticker,
+        name: r.analysis.name,
         dividendYield: r.analysis.dividendYield,
         dividendMonths: r.analysis.dividendMonths || [],
         annualIncomeUSD,
@@ -710,22 +770,82 @@ export default function PortfolioAnalyzerPage() {
           {/* Holdings list */}
           <div className="mt-4 space-y-1.5">
             {holdings.length === 0 && <p className="text-sm text-gray-500">No holdings added yet.</p>}
-            {holdings.map((h) => (
-              <div key={h.ticker} className="flex items-center gap-3 bg-gray-900/60 rounded-lg px-3 py-2 text-sm">
-                <Avatar symbol={h.ticker} size="xs" />
-                <span className="text-white font-medium w-16">{h.ticker}</span>
-                <span className="text-gray-500 flex-1 truncate hidden sm:inline">{h.name}</span>
-                <span className="text-gray-400">{h.quantity} sh</span>
-                <span className="text-gray-400">@ {h.avgPrice}</span>
-                <button
-                  onClick={() => removeHolding(h.ticker)}
-                  aria-label={`Remove ${h.ticker}`}
-                  className="ml-2 w-5 h-5 flex items-center justify-center rounded-full text-gray-500 hover:bg-red-500/20 hover:text-red-400 transition-colors"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+            {holdings.map((h) => {
+              const isEditing = editingTicker === h.ticker;
+              return (
+                <div key={h.ticker} className="flex items-center gap-3 bg-gray-900/60 rounded-lg px-3 py-2 text-sm">
+                  <Avatar symbol={h.ticker} size="xs" />
+                  <span className="text-white font-medium w-16">{h.ticker}</span>
+                  <span className="text-gray-500 flex-1 truncate hidden sm:inline">{h.name}</span>
+                  {isEditing ? (
+                    <>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={editQty}
+                        onChange={(e) => setEditQty(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditHolding(h.ticker);
+                          if (e.key === 'Escape') cancelEditHolding();
+                        }}
+                        autoFocus
+                        className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                      />
+                      <span className="text-gray-500">sh @</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={editPrice}
+                        onChange={(e) => setEditPrice(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditHolding(h.ticker);
+                          if (e.key === 'Escape') cancelEditHolding();
+                        }}
+                        className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                      />
+                      <button
+                        onClick={() => saveEditHolding(h.ticker)}
+                        aria-label={`Save ${h.ticker}`}
+                        className="ml-1 w-5 h-5 flex items-center justify-center rounded-full text-gray-500 hover:bg-emerald-500/20 hover:text-emerald-400 transition-colors"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={cancelEditHolding}
+                        aria-label={`Cancel editing ${h.ticker}`}
+                        className="w-5 h-5 flex items-center justify-center rounded-full text-gray-500 hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                      >
+                        ×
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-gray-400">{h.quantity} sh</span>
+                      <span className="text-gray-400">@ {h.avgPrice}</span>
+                      <button
+                        onClick={() => startEditHolding(h)}
+                        aria-label={`Edit ${h.ticker}`}
+                        className="ml-2 w-5 h-5 flex items-center justify-center rounded-full text-gray-500 hover:bg-cyan-500/20 hover:text-cyan-400 transition-colors"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => removeHolding(h.ticker)}
+                        aria-label={`Remove ${h.ticker}`}
+                        className="w-5 h-5 flex items-center justify-center rounded-full text-gray-500 hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                      >
+                        ×
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="mt-4 flex items-center justify-between gap-3">
@@ -734,6 +854,13 @@ export default function PortfolioAnalyzerPage() {
               <span className="text-xs text-gray-500">
                 {holdings.length} holding{holdings.length !== 1 ? 's' : ''}
               </span>
+              <button
+                onClick={exportHoldingsCSV}
+                disabled={holdings.length === 0}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed rounded-lg text-sm font-medium text-white transition-colors"
+              >
+                Export CSV
+              </button>
               <button
                 onClick={analyzePortfolio}
                 disabled={loading || holdings.length === 0}
@@ -924,13 +1051,25 @@ export default function PortfolioAnalyzerPage() {
 
                   {dividendSectionOpen && (
                     <div className="mt-2 space-y-1.5">
-                      {dividendIncome.holdings.map((h) => {
-                        const displayAnnual = fromUSD(h.annualIncomeUSD, displayCurrency);
-                        const perPayout =
-                          h.dividendMonths.length > 0 && displayAnnual != null ? displayAnnual / h.dividendMonths.length : null;
-                        return (
-                          <div key={h.ticker} className="flex items-center gap-3 bg-gray-900/60 rounded-lg px-3 py-2 text-sm">
-                            <span className="text-white font-medium w-16">{h.ticker}</span>
+                      {(() => {
+                        const upcomingTickers = new Set(dividendIncome.upcoming.map((u) => u.ticker));
+                        return dividendIncome.holdings.map((h) => {
+                          const displayAnnual = fromUSD(h.annualIncomeUSD, displayCurrency);
+                          const perPayout =
+                            h.dividendMonths.length > 0 && displayAnnual != null ? displayAnnual / h.dividendMonths.length : null;
+                          const hasUpcoming = upcomingTickers.has(h.ticker);
+                          return (
+                            <div
+                              key={h.ticker}
+                              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm border-2 ${
+                                hasUpcoming ? 'bg-gray-900/60 border-emerald-500' : 'bg-gray-900/60 border-transparent'
+                              }`}
+                            >
+                            <Avatar symbol={h.ticker} size="xs" />
+                            <div className="w-24 shrink-0">
+                              <div className="text-white font-medium">{h.ticker}</div>
+                              <div className="text-gray-500 text-xs truncate">{h.name}</div>
+                            </div>
                             <span className="text-gray-400 w-20">
                               {h.dividendYield != null ? `${h.dividendYield.toFixed(2)}% yield` : 'N/A'}
                             </span>
@@ -952,8 +1091,9 @@ export default function PortfolioAnalyzerPage() {
                               </div>
                             </div>
                           </div>
-                        );
-                      })}
+                          );
+                        });
+                      })()}
                     </div>
                   )}
                 </div>
