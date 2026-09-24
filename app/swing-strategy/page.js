@@ -120,6 +120,14 @@ export default function SwingStrategyPage() {
   const [targetPriceInput, setTargetPriceInput] = useState('');
   const inputRef = useRef(null);
 
+  // Deep-link support: /swing-strategy?ticker=SYMBOL pre-fills the ticker
+  // (used by Screener's "Swing Strategy →" button).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ticker = params.get('ticker')?.trim().toUpperCase();
+    if (ticker) setInput(ticker);
+  }, []);
+
   const localMatches = useMemo(() => searchTickers(input, []), [input]);
 
   useEffect(() => {
@@ -579,6 +587,36 @@ export default function SwingStrategyPage() {
                     />
                   </div>
                 </div>
+
+                {(() => {
+                  const sc = parseFloat(shares);
+                  const ep = parseFloat(entryPriceInput);
+                  const sl = parseFloat(stopLossInput);
+                  const tp = parseFloat(targetPriceInput);
+                  const totalCost = sc > 0 && ep > 0 ? sc * ep : null;
+                  const totalStopLoss = sc > 0 && sl > 0 ? sc * sl : null;
+                  const totalTakeProfit = sc > 0 && tp > 0 ? sc * tp : null;
+                  if (totalCost == null && totalStopLoss == null && totalTakeProfit == null) return null;
+                  return (
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-xs text-gray-400">
+                      {totalCost != null && (
+                        <span>
+                          Total Cost: <span className="font-mono text-gray-200">{fmt(totalCost, result.currency)}</span>
+                        </span>
+                      )}
+                      {totalStopLoss != null && (
+                        <span>
+                          Total Stop Loss: <span className="font-mono text-red-300">{fmt(totalStopLoss, result.currency)}</span>
+                        </span>
+                      )}
+                      {totalTakeProfit != null && (
+                        <span>
+                          Total Take Profit: <span className="font-mono text-emerald-300">{fmt(totalTakeProfit, result.currency)}</span>
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {tradeRisk ? (
                   <>

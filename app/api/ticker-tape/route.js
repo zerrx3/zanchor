@@ -12,7 +12,7 @@ const TAPE_SYMBOLS = {
     { display: 'MSFT', symbol: 'MSFT' },
     { display: 'NVDA', symbol: 'NVDA' },
     { display: 'TSLA', symbol: 'TSLA' },
-    { display: 'GOOGL', symbol: 'GOOGL' },
+    { display: 'GOOG', symbol: 'GOOG' },
     { display: 'AMZN', symbol: 'AMZN' },
     { display: 'META', symbol: 'META' },
     { display: 'SPCX', symbol: 'SPCX' },

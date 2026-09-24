@@ -701,6 +701,22 @@ export default function StockAnalyzerPage() {
     }
   }, []);
 
+  // Deep-link support: /stock-analyzer?ticker=SYMBOL pre-selects that ticker
+  // (used by Screener's "Stock Analyzer →" button). Uses functional updates
+  // so it's safe regardless of ordering against the restore effect above.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ticker = params.get('ticker')?.trim().toUpperCase();
+    if (!ticker) return;
+    const region = ticker.endsWith('.SI') ? 'SG' : 'US';
+    setActiveRegion(region);
+    setTickersByRegion((prev) => {
+      const current = prev[region] || [];
+      if (current.includes(ticker) || current.length >= 15) return prev;
+      return { ...prev, [region]: [...current, ticker] };
+    });
+  }, []);
+
   // Persist selection on every change, skipping the mount-time run so we
   // don't clobber saved data with the pre-restore empty state above.
   useEffect(() => {

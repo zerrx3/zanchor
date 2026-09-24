@@ -393,6 +393,8 @@ function MarketPulse() {
 }
 
 export default function HomePage() {
+  const [changelogIndex, setChangelogIndex] = useState(0);
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Hero */}
@@ -535,28 +537,51 @@ export default function HomePage() {
           </div>
 
           <div className="mx-auto max-w-3xl space-y-5">
-            {CHANGELOG.slice(0, 1).map((entry) => (
-              <div
-                key={entry.version}
-                className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6 backdrop-blur"
-              >
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-300">
-                    {entry.version}
-                  </span>
-                  <h3 className="text-base font-semibold text-white">{entry.title}</h3>
-                  <span className="ml-auto font-mono text-xs text-gray-600">{entry.date}</span>
+            {(() => {
+              const entry = CHANGELOG[changelogIndex];
+              if (!entry) return null;
+              return (
+                <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6 backdrop-blur">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-300">
+                      {entry.version}
+                    </span>
+                    <h3 className="text-base font-semibold text-white">{entry.title}</h3>
+                    <span className="ml-auto font-mono text-xs text-gray-600">{entry.date}</span>
+                  </div>
+                  <ul className="mt-4 space-y-2">
+                    {entry.changes.map((change, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-600" aria-hidden />
+                        {change}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="mt-4 space-y-2">
-                  {entry.changes.map((change, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-600" aria-hidden />
-                      {change}
-                    </li>
-                  ))}
-                </ul>
+              );
+            })()}
+
+            {CHANGELOG.length > 1 && (
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => setChangelogIndex((i) => Math.min(i + 1, CHANGELOG.length - 1))}
+                  disabled={changelogIndex >= CHANGELOG.length - 1}
+                  className="px-3 py-1.5 rounded-lg border border-gray-800 bg-gray-900/60 text-xs font-medium text-gray-400 hover:text-white hover:border-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  ← Older
+                </button>
+                <span className="font-mono text-xs text-gray-600">
+                  {changelogIndex + 1} / {CHANGELOG.length}
+                </span>
+                <button
+                  onClick={() => setChangelogIndex((i) => Math.max(i - 1, 0))}
+                  disabled={changelogIndex <= 0}
+                  className="px-3 py-1.5 rounded-lg border border-gray-800 bg-gray-900/60 text-xs font-medium text-gray-400 hover:text-white hover:border-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  Newer →
+                </button>
               </div>
-            ))}
+            )}
           </div>
         </section>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import SiteNav from '@/components/SiteNav';
 import {
   getSectorsForRegion,
@@ -309,6 +310,20 @@ function ScreenerRow({ rank, result, expanded, onToggle, showYield, showEntry })
           {pros.length === 0 && cons.length === 0 && (
             <p className="text-xs text-gray-500">No standout factors either way — data was mostly neutral.</p>
           )}
+          <div className="mt-3 flex justify-end gap-2">
+            <Link
+              href={`/stock-analyzer?ticker=${result.ticker}`}
+              className="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+            >
+              Stock Analyzer →
+            </Link>
+            <Link
+              href={`/swing-strategy?ticker=${result.ticker}`}
+              className="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-colors"
+            >
+              Swing Strategy →
+            </Link>
+          </div>
         </div>
       )}
     </div>
