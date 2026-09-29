@@ -440,6 +440,53 @@ export default function SwingStrategyPage() {
               </div>
             </section>
 
+            {/* Cluster support/resistance — a second, strength-weighted signal
+                separate from the confluence zones below. Only shown when a
+                genuine multi-touch level was actually found. */}
+            {(result.supportCluster || result.resistanceCluster) && (
+              <section>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
+                  Strong Support / Resistance
+                </h3>
+                <div className="rounded-xl border border-gray-700 bg-gray-900/40 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {result.supportCluster ? (
+                    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5">
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-emerald-400">Support</div>
+                      <div className="mt-0.5 font-mono text-lg text-emerald-200">
+                        {fmt(result.supportCluster.price, result.currency)}
+                      </div>
+                      <div className="text-[11px] text-emerald-300/70">
+                        Tested {result.supportCluster.touches}× over the past year — a repeated, retested level.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-gray-700 px-3 py-2.5 text-[11px] text-gray-500">
+                      No repeatedly-tested support found nearby.
+                    </div>
+                  )}
+                  {result.resistanceCluster ? (
+                    <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5">
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-red-400">Resistance</div>
+                      <div className="mt-0.5 font-mono text-lg text-red-200">
+                        {fmt(result.resistanceCluster.price, result.currency)}
+                      </div>
+                      <div className="text-[11px] text-red-300/70">
+                        Tested {result.resistanceCluster.touches}× over the past year — a repeated, retested level.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-gray-700 px-3 py-2.5 text-[11px] text-gray-500">
+                      No repeatedly-tested resistance found nearby.
+                    </div>
+                  )}
+                </div>
+                <p className="mt-2 text-[11px] text-gray-600 text-center">
+                  A level the stock has bounced off (or rejected from) multiple times over the past year — a
+                  stronger reference than a single nearby touch, independent of the confluence entry zone below.
+                </p>
+              </section>
+            )}
+
             {/* Confluence */}
             <section>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">

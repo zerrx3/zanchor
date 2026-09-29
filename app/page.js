@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { CHANGELOG } from '@/lib/changelog';
 
 const STATS = [
-  { value: '6', label: 'Research Tools' },
+  { value: '7', label: 'Research Tools' },
   { value: '15', label: 'Sectors Tracked' },
   { value: 'US + SG', label: 'Markets Covered' },
   { value: '24h', label: 'Data Refresh Cycle' },
@@ -96,6 +96,17 @@ const TOOLS = [
     accent: 'purple',
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16v12H4V6Zm0 0 8 7 8-7" />,
   },
+  {
+    href: '/options-strategy',
+    tag: '07 · Derivatives',
+    title: 'Options Strategy',
+    description:
+      'Pick a ticker and get a rules-based read on the setup — fundamentals, implied vs. realized volatility, and upcoming earnings — with candidate options strategies to consider.',
+    chips: ['Vol Read', 'Strategy Ideas', 'Chain Browser'],
+    cta: 'Explore strategies',
+    accent: 'indigo',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" d="m12 2 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5" />,
+  },
 ];
 
 const ACCENT_STYLES = {
@@ -141,7 +152,43 @@ const ACCENT_STYLES = {
     chip: 'bg-orange-500/10 text-orange-300 border-orange-500/20',
     cta: 'text-orange-400 group-hover:text-orange-300',
   },
+  indigo: {
+    border: 'hover:border-indigo-500/50',
+    glow: 'group-hover:shadow-[0_0_40px_-8px_rgba(99,102,241,0.35)]',
+    iconWrap: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+    chip: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
+    cta: 'text-indigo-400 group-hover:text-indigo-300',
+  },
 };
+
+// Maps a changelog bullet's leading "Tool — ..." label to that tool's own
+// accent color, matching the chip styling used on the tool cards above.
+const TOOL_ACCENT = {
+  'Portfolio Analyzer': 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30',
+  'Stock Analyzer': 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+  'Swing Strategy': 'bg-amber-500/10 text-amber-300 border-amber-500/30',
+  'Screener': 'bg-orange-500/10 text-orange-300 border-orange-500/30',
+  'Market Newsletter': 'bg-purple-500/10 text-purple-300 border-purple-500/30',
+  'Sector Rotation': 'bg-rose-500/10 text-rose-300 border-rose-500/30',
+  'Options Strategy': 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30',
+};
+
+function ChangelogBullet({ change }) {
+  const sepIndex = change.indexOf(' — ');
+  const tool = sepIndex === -1 ? null : change.slice(0, sepIndex);
+  const accent = tool ? TOOL_ACCENT[tool] : null;
+
+  if (!accent) return <span>{change}</span>;
+
+  return (
+    <span>
+      <span className={`mr-1.5 rounded border px-1.5 py-0.5 text-[10px] font-semibold align-middle ${accent}`}>
+        {tool}
+      </span>
+      {change.slice(sepIndex + 3)}
+    </span>
+  );
+}
 
 const TAPE_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -553,7 +600,7 @@ export default function HomePage() {
                     {entry.changes.map((change, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
                         <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-600" aria-hidden />
-                        {change}
+                        <ChangelogBullet change={change} />
                       </li>
                     ))}
                   </ul>

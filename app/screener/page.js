@@ -323,6 +323,12 @@ function ScreenerRow({ rank, result, expanded, onToggle, showYield, showEntry })
             >
               Swing Strategy →
             </Link>
+            <Link
+              href={`/options-strategy?ticker=${result.ticker}`}
+              className="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-colors"
+            >
+              Options Strategy →
+            </Link>
           </div>
         </div>
       )}
